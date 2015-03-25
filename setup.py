@@ -3,7 +3,9 @@ from setuptools import setup, find_packages
 
 setup(
     name='qianka-flaskext',
-    version='1.0.dev',
+    version='1.0.0dev',
+
+    packages=find_packages(),
 
     install_requires=[
         'Flask',
