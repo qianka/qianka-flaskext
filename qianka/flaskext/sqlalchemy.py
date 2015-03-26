@@ -7,7 +7,7 @@ from flask.ext.sqlalchemy import SignallingSession, SQLAlchemy, get_state
 __all__ = ['QKSQLAlchemy']
 
 
-_CTX_ATTR = '_sqlalchemy_use_bind_stack'
+_CTX_ATTR = '_sqlalchemy_e7c4ed555c3ad9d68c4f4054efd80a40'  # md5(_sqlalchemy_use_bind_stack)
 
 
 class QKSignallingSession(SignallingSession):

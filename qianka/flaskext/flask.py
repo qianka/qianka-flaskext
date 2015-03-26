@@ -17,6 +17,9 @@ class QKFlask(Flask):
     - prepare_webassets()
     - prepare_celery()
     - build_assets()
+    - HTML_COMPRESS
+    - CDN_URL_PREFIX_STATIC
+    - CDN_URL_PREFIX_ASSETS
     """
     def __init__(self, import_name, static_path=None, static_url_path=None,
                  static_folder='static', template_folder='templates',
@@ -37,7 +40,7 @@ class QKFlask(Flask):
 
     def add_url_rule(self, rule, endpoint=None, view_func=None, **options):
         """
-        The argument endpoint becomes optional and equals rule by default
+        Override. The argument endpoint becomes optional and equals rule by default
         """
         if endpoint is None:
             endpoint = rule
@@ -49,7 +52,7 @@ class QKFlask(Flask):
             **options
         )
 
-    def register_asset(self, name, *assets, filters=None):
+    def register_asset(self, name, *assets):
         """
         合并、预处理资源文件，并注册至 webassets。
 
@@ -84,7 +87,8 @@ class QKFlask(Flask):
         output = '%s.%%(version)s%s' % (fn, fe)
         self.webassets.register(name, *bundles, output=output)
 
-    def _detect_filters_by_ext(self, filename):
+    @staticmethod
+    def _detect_filters_by_ext(filename):
         filter_map = {
             '.jinja':  ['jinja2'],
             '.styl':   ['stylus', 'cssmin'],
@@ -171,6 +175,10 @@ class QKFlask(Flask):
         )
 
     def build_assets(self, args=None):
+        """
+        :param args: the command line arguments
+        :return:
+        """
         if args is None:
             args = ['-v', 'build']
 
@@ -182,6 +190,11 @@ class QKFlask(Flask):
             impl.main(args)
 
     def prepare_celery(self, celery):
+        """
+        确保异步任务在 appctx 下执行
+        :param celery:
+        :return:
+        """
         _TaskBase = celery.Task
         outter = self
 

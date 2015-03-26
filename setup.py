@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='qianka-flaskext',
-    version='1.0.0',
+    version='1.0.1',
 
     packages=find_packages(),
 
@@ -19,5 +19,5 @@ setup(
 
     author="Qianka Inc.",
     description="",
-    url=''
+    url='http://github.com/qianka/qianka-flaskext'
 )
