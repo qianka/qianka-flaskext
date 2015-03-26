@@ -23,10 +23,16 @@ class ServerSideSession(CallbackDict, SessionMixin):
 
 
 class RedisSession(ServerSideSession):
+    """
+    placeholder
+    """
     pass
 
 
 class RedisSessionInterface(SessionInterface):
+    """
+    使用服务端的 Redis 保存访问者 session，采用 msgpack 序列化数据
+    """
 
     serializer = msgpack
     session_class = RedisSession
@@ -44,6 +50,12 @@ class RedisSessionInterface(SessionInterface):
 
     @staticmethod
     def encode_sid(sid, salt):
+        """
+        编码 session_id，并增加校验码，使得该 ID 不容易被猜测
+        :param sid: 原始编号，服务端 redis 里使用的编号
+        :param salt: 共享密钥
+        :return: 编码过的 sid
+        """
         if not isinstance(sid, str):
             return None
         m = hashlib.sha1((sid + salt).encode('utf8')).hexdigest()
@@ -51,6 +63,12 @@ class RedisSessionInterface(SessionInterface):
 
     @staticmethod
     def decode_sid(data, salt):
+        """
+        解码并验证 session_id
+        :param data: 编码过的 sid，客户端 cookie 里存放的编号
+        :param salt: 共享密钥
+        :return: 原始编号；如果验证错误，返回 None
+        """
         if not isinstance(data, str) or len(data) < 6:
             return None
         sid = data[3:-3]
@@ -60,6 +78,12 @@ class RedisSessionInterface(SessionInterface):
         return None
 
     def open_session(self, app, request):
+        """
+        从 redis 里获取 session 的内容
+        :param app:
+        :param request:
+        :return:
+        """
         sid = request.cookies.get(app.session_cookie_name)
         sid = self.decode_sid(sid, app.secret_key)
         if not sid:
@@ -71,14 +95,22 @@ class RedisSessionInterface(SessionInterface):
                 data = self.serializer.loads(val, encoding='utf8')
                 return self.session_class(data, sid=sid)
             except Exception as e:
-                print(e)
+                app.logger.warning(e)
                 return self.session_class(sid=sid)
         return self.session_class(sid=sid)
 
     def save_session(self, app, session, response):
+        """
+        保存 session 内容至 redis
+        :param app:
+        :param session:
+        :param response:
+        :return:
+        """
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         if not session:
+            # 删除 session
             if session.modified:
                 self.redis.delete(self.key_prefix + session.sid)
                 response.delete_cookie(app.session_cookie_name,
@@ -88,6 +120,7 @@ class RedisSessionInterface(SessionInterface):
         if not session.new and not session.modified:
             return
 
+        # 保存改动过的 session包括新建立的
         httponly = self.get_cookie_httponly(app)
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
