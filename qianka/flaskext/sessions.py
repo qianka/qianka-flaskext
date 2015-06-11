@@ -117,17 +117,20 @@ class RedisSessionInterface(SessionInterface):
                                        domain=domain, path=path)
             return
 
-        if not session.new and not session.modified:
+        if session.modified:
+            # 保存改动过的 session
+            val = self.serializer.dumps(dict(session), use_bin_type=True, encoding='utf8')
+            self.redis.setex(self.key_prefix + session.sid,
+                             int(app.permanent_session_lifetime.total_seconds()),
+                             val)
+
+        if not session.new:
             return
 
-        # 保存改动过的 session包括新建立的
+        # 新 session 设置 sid 至 cookie
         httponly = self.get_cookie_httponly(app)
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
-        val = self.serializer.dumps(dict(session), use_bin_type=True, encoding='utf8')
-        self.redis.setex(self.key_prefix + session.sid,
-                         int(app.permanent_session_lifetime.total_seconds()),
-                         val)
         sid = self.encode_sid(session.sid, app.secret_key)
         response.set_cookie(app.session_cookie_name, sid,
                             expires=expires, httponly=httponly,
