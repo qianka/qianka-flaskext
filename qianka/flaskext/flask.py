@@ -121,9 +121,10 @@ class QKFlask(Flask):
         )
 
         # url_for that supports CDN
+        origin_url_for = self.jinja_env.globals['url_for']
+
         def url_for(endpoint, **values):
-            from flask import url_for as flask_url_for
-            url = flask_url_for(endpoint, **values)
+            url = origin_url_for(endpoint, **values)
 
             external = values.pop('_external', False)
             if external:

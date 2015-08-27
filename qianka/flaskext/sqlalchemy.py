@@ -1,37 +1,69 @@
 # -*- coding: utf-8 -*-
 from contextlib import contextmanager
-from flask import _app_ctx_stack
-from flask.ext.sqlalchemy import SignallingSession, SQLAlchemy, get_state
+
+from flask.globals import _app_ctx_stack
+
+from qianka.sqlalchemy import QKSession as SessionBase
+from qianka.sqlalchemy import QKSQLAlchemy as SQLAlchemyBase
 
 
-__all__ = ['QKSQLAlchemy']
-
+__all__ = ['QKSQLAlchemy', 'QKSession', 'QKShardSession']
 
 _CTX_ATTR = '_sqlalchemy_e7c4ed555c3ad9d68c4f4054efd80a40'  # md5(_sqlalchemy_use_bind_stack)
 
 
-class QKSignallingSession(SignallingSession):
-    def get_bind(self, mapper, clause=None):
-        """Customize database query routing (master/salve or sharding) here
+class QKSession(SessionBase):
+    """ 支持 db.use_bind() 方法选择数据库连接
+    """
+    def __init__(self, db, **kwargs):
+        super(QKSession, self).__init__(db, **kwargs)
+        self.app = db.app
+
+    def get_bind(self, *args, **kwargs):
+        """ Customize database query routing (master/salve or sharding) here
         """
         ctx = _app_ctx_stack.top
         stack = hasattr(ctx, _CTX_ATTR) and getattr(ctx, _CTX_ATTR, None)
         if isinstance(stack, list) and len(stack) > 0:
             bind_key = stack[-1]
-            state = get_state(self.app)
-            bind = state.db.get_engine(self.app, bind=bind_key)
+            engine = self.db.get_engine(bind_key)
             self.app.logger.debug('sqlalchemy_use_bind: %s' % bind_key)
-            return bind
+            return engine
 
-        return SignallingSession.get_bind(self, mapper, clause)
+        return super(QKSession, self).get_bind(*args, **kwargs)
 
 
-class QKSQLAlchemy(SQLAlchemy):
-    def create_session(self, options):
-        return QKSignallingSession(self, **options)
+class QKSQLAlchemy(SQLAlchemyBase):
+    """ 在 Flask 中使用 SQLAlchemy
+    Usage:
+        app = Flask(__name__)
+        db = QKSQLalchemy()
+        db.init_app(app)
+
+    - 传统单 session 用法:
+        db.session.query(...)
+    - 支持多 session 用法：
+        db.get_session('master').query(...)
+    """
+    app = None
+
+    def init_app(self, app):
+        """
+        :param app:
+        :return:
+        """
+        self.app = app
+        self.configure(self.app.config)
+
+        self.scopefunc = _app_ctx_stack.__ident_func__
+
+        @app.teardown_appcontext
+        def shutdown_session(response_or_exc):
+            self.reset()
+            return response_or_exc
 
     @contextmanager
-    def use_bind(self, bind_key=None):
+    def use_bind(self, bind_key):
         """Specify bind(engine/connection) for the current session
         :param bind_key: SQLALCHEMY_BINDS configured key
 

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='qianka-flaskext',
-    version='1.0.3',
+    version='1.1.0',
 
     packages=find_packages(),
 
@@ -13,6 +13,7 @@ setup(
         'Flask-SQLAlchemy',
         'redis',
         'msgpack-python',
+        'qianka-sqlalchemy',
     ],
     setup_requires=[],
     tests_require=[],
