@@ -54,6 +54,3 @@ target/
 
 # PyCharm
 .idea/
-
-# devel
-.virtualenv/
