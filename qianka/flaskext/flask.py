@@ -105,6 +105,13 @@ class QKFlask(Flask):
                 filters.extend(filter_map[fe])
             filename = fn
 
+    def select_jinja_autoescape(self, filename):
+        if filename is None:
+            return False
+        if super(QKFlask, self).select_jinja_autoescape(filename):
+            return True
+        return filename.endswith(('.html.jinja', '.htm.jinja', '.xml.jinja', '.xhtml.jinja'))
+
     def prepare_templates(self):
         """
         - 支持 HTML 压缩，`{% strip %} ... {% endstrip %}`
