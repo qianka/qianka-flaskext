@@ -3,14 +3,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='qianka-flaskext',
-    version='1.1.0',
+    version='1.1.1',
 
     packages=find_packages(),
 
     install_requires=[
         'Flask',
         'Flask-Assets',
-        'Flask-SQLAlchemy',
         'redis',
         'msgpack-python',
         'qianka-sqlalchemy',
