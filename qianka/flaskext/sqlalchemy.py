@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from flask.globals import _app_ctx_stack
 
 from qianka.sqlalchemy import QKSession as SessionBase
-from qianka.sqlalchemy import QKSQLAlchemy as SQLAlchemyBase
+from qianka.sqlalchemy import QKSQLAlchemy
 
 
 __all__ = ['QKSQLAlchemy', 'QKSession', 'QKShardSession']
@@ -33,11 +33,11 @@ class QKSession(SessionBase):
         return super(QKSession, self).get_bind(*args, **kwargs)
 
 
-class QKSQLAlchemy(SQLAlchemyBase):
+class QKFlaskSQLAlchemy(object):
     """ 在 Flask 中使用 SQLAlchemy
     Usage:
         app = Flask(__name__)
-        db = QKSQLalchemy()
+        db = QKFlaskSQLAlchemy(QKSQLAlchemy())
         db.init_app(app)
 
     - 传统单 session 用法:
@@ -45,21 +45,27 @@ class QKSQLAlchemy(SQLAlchemyBase):
     - 支持多 session 用法：
         db.get_session('master').query(...)
     """
-    app = None
+    def __init__(self, db, app=None):
+        print(db)
+        # if isinstance(db, QKSQLAlchemy):
+        #     raise ValueError("db shoud be instance of %r" % type(QKSQLAlchemy))
+        self.db = db
+        if app:
+            self.init_app(app)
 
     def init_app(self, app):
         """
         :param app:
         :return:
         """
-        self.app = app
-        self.configure(self.app.config)
+        self.db.app = app
+        self.db.configure(self.db.app.config)
 
-        self.scopefunc = _app_ctx_stack.__ident_func__
+        self.db.scopefunc = _app_ctx_stack.__ident_func__
 
         @app.teardown_appcontext
         def shutdown_session(response_or_exc):
-            self.reset()
+            self.db.reset()
             return response_or_exc
 
     @contextmanager
@@ -82,3 +88,39 @@ class QKSQLAlchemy(SQLAlchemyBase):
             yield
         finally:
             stack.pop()
+
+    ###
+
+    @property
+    def config(self):
+        return self.db.config
+
+    def configure(self, config=None, **kwargs):
+        return self.db.configure(config, **kwargs)
+
+    def reset(self):
+        return self.db.reset()
+
+    def create_session(self, engine=None, shard=False):
+        return self.db.create_session(engine, shard)
+
+    def get_session(self, bind_key=None):
+        return self.db.get_session(bind_key)
+
+    @property
+    def session(self):
+        return self.db.session
+
+    def create_engine(self, uri):
+        return self.db.create_engine(uri)
+
+    def get_engine(self, bind_key=None):
+        return self.db.get_engine(bind_key)
+
+    @property
+    def engine(self):
+        return self.db.engine
+
+    def reflect_model(self, table_name, bind_key=None):
+        return self.db.reflect_model(table_name, bind_key)
+
