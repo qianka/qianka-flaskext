@@ -7,7 +7,7 @@ from qianka.sqlalchemy import QKSession as SessionBase
 from qianka.sqlalchemy import QKSQLAlchemy
 
 
-__all__ = ['QKSQLAlchemy', 'QKSession', 'QKShardSession']
+__all__ = ['QKFlaskSQLAlchemy', 'QKSession', 'QKShardSession']
 
 _CTX_ATTR = '_sqlalchemy_e7c4ed555c3ad9d68c4f4054efd80a40'  # md5(_sqlalchemy_use_bind_stack)
 
