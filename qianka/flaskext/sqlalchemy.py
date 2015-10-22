@@ -37,8 +37,8 @@ class QKFlaskSQLAlchemy(object):
     """ 在 Flask 中使用 SQLAlchemy
     Usage:
         app = Flask(__name__)
-        db = QKFlaskSQLAlchemy(QKSQLAlchemy())
-        db.init_app(app)
+        db = QKSQLAlchemy()
+        QKFlaskSQLAlchemy(db, app)
 
     - 传统单 session 用法:
         db.session.query(...)
@@ -46,7 +46,6 @@ class QKFlaskSQLAlchemy(object):
         db.get_session('master').query(...)
     """
     def __init__(self, db, app=None):
-        print(db)
         # if isinstance(db, QKSQLAlchemy):
         #     raise ValueError("db shoud be instance of %r" % type(QKSQLAlchemy))
         self.db = db
